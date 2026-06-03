@@ -2,8 +2,8 @@ name: Workday Clock-out Reminder
 
 on:
   schedule:
-    # Beijing time 18:05, Monday-Friday. GitHub Actions cron uses UTC.
-    - cron: "5 10 * * 1-5"
+    # Beijing time 18:05, Monday-Saturday. GitHub Actions cron uses UTC.
+    - cron: "5 10 * * 1-6"
   workflow_dispatch:
 
 jobs:
