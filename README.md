@@ -1,6 +1,6 @@
 # 企业微信群下班打卡提醒
 
-这个项目使用 GitHub Actions 在工作日北京时间 18:05 自动通过企业微信群机器人 Webhook 发送 markdown 提醒：
+这个项目使用 GitHub Actions 在周一到周六北京时间 18:05 自动通过企业微信群机器人 Webhook 发送 markdown 提醒：
 
 > 下班打卡提醒：别忘了打卡下班。
 
@@ -37,13 +37,13 @@ WECHAT_WEBHOOK_URL
 
 ## 定时规则
 
-GitHub Actions 的 `schedule` 使用 UTC 时间。北京时间是 UTC+8，所以工作日北京时间 18:05 对应 UTC 10:05。
+GitHub Actions 的 `schedule` 使用 UTC 时间。北京时间是 UTC+8，所以周一到周六北京时间 18:05 对应 UTC 10:05。
 
 当前 workflow 配置在 [.github/workflows/workday-clock-out-reminder.yml](.github/workflows/workday-clock-out-reminder.yml)：
 
 ```yaml
 schedule:
-  - cron: "5 10 * * 1-5"
+  - cron: "5 10 * * 1-6"
 ```
 
 含义：
@@ -51,20 +51,20 @@ schedule:
 - `5`：第 5 分钟
 - `10`：UTC 10 点，也就是北京时间 18 点
 - `* *`：每天、每月
-- `1-5`：周一到周五
+- `1-6`：周一到周六
 
 ## 修改提醒时间
 
 修改 `.github/workflows/workday-clock-out-reminder.yml` 里的 cron 表达式即可。
 
-例如要改成工作日北京时间 19:30：
+例如要改成周一到周六北京时间 19:30：
 
 1. 北京时间 19:30 减去 8 小时，得到 UTC 11:30。
 2. 修改为：
 
 ```yaml
 schedule:
-  - cron: "30 11 * * 1-5"
+  - cron: "30 11 * * 1-6"
 ```
 
 ## 手动测试
