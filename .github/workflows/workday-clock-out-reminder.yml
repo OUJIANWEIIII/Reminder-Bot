@@ -1,15 +1,7 @@
 name: Workday Clock-out Reminder
 
 on:
-  schedule:
-    # Try every 5 minutes from Beijing time 18:00 to 18:25, Monday-Saturday.
-    # GitHub Actions cron uses UTC.
-    - cron: "0,5,10,15,20,25 10 * * 1-6"
   workflow_dispatch:
-
-concurrency:
-  group: clock-out-reminder-${{ github.ref }}
-  cancel-in-progress: false
 
 jobs:
   send-reminder:
@@ -17,16 +9,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Compute Beijing date
-        id: beijing-date
-        run: echo "date=$(TZ=Asia/Shanghai date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
-
-      - name: Restore sent marker
-        uses: actions/cache@v4
-        with:
-          path: .reminder-state
-          key: clock-out-reminder-${{ steps.beijing-date.outputs.date }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -36,5 +18,4 @@ jobs:
       - name: Send WeCom markdown reminder
         env:
           WECHAT_WEBHOOK_URL: ${{ secrets.WECHAT_WEBHOOK_URL }}
-          SENT_MARKER_PATH: .reminder-state/${{ steps.beijing-date.outputs.date }}.sent
         run: node scripts/send-wechat-reminder.js
