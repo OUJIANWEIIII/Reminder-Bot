@@ -1,10 +1,12 @@
 # 企业微信群下班打卡提醒
 
-这个项目使用 GitHub Actions 在周一到周六北京时间 18:00-18:25 之间多次尝试触发，并通过脚本保护确保只在北京时间 18:00-18:30 之间发送一次 markdown 提醒：
+推荐使用 [腾讯云 SCF 云函数方案](scf/README.md)。GitHub Actions 的定时任务曾经出现严重延迟，不适合作为重要打卡提醒的主方案。
+
+腾讯云 SCF 方案会在周一到周六北京时间 18:05 通过企业微信群机器人 Webhook 发送 markdown 提醒：
 
 > 下班打卡提醒：别忘了打卡下班。
 
-Webhook 地址只从 GitHub Secrets 的 `WECHAT_WEBHOOK_URL` 读取，不会写进代码。
+Webhook 地址从云函数环境变量 `WECHAT_WEBHOOK_URL` 读取，不会写进代码。
 
 ## 配置企业微信群机器人
 
@@ -13,74 +15,30 @@ Webhook 地址只从 GitHub Secrets 的 `WECHAT_WEBHOOK_URL` 读取，不会写�
 3. 添加「自定义机器人」。
 4. 复制机器人生成的 Webhook 地址。
 
-Webhook 地址形如：
+请不要把 Webhook 地址提交到仓库。
 
-```text
-https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-```
+## 腾讯云部署
 
-请不要把这个地址提交到仓库。
+完整步骤见 [scf/README.md](scf/README.md)。
 
-## 添加 GitHub Secret
+核心配置：
 
-1. 打开 GitHub 仓库页面。
-2. 进入 `Settings` -> `Secrets and variables` -> `Actions`。
-3. 点击 `New repository secret`。
-4. `Name` 填写：
-
-```text
-WECHAT_WEBHOOK_URL
-```
-
-5. `Secret` 填写企业微信群机器人 Webhook 地址。
-6. 保存后，GitHub Actions 会在运行时通过 `${{ secrets.WECHAT_WEBHOOK_URL }}` 读取。
+- 云函数执行方法：`index.main`
+- 环境变量：`WECHAT_WEBHOOK_URL`
+- 定时触发器 Cron：`0 5 18 ? * MON-SAT *`
 
 ## 定时规则
 
-GitHub Actions 的 `schedule` 使用 UTC 时间。北京时间是 UTC+8，所以周一到周六北京时间 18:00-18:25 对应 UTC 10:00-10:25。
+腾讯云 SCF 定时触发器使用 7 字段 Cron 表达式：秒、分钟、小时、日、月、星期、年。
 
-当前 workflow 配置在 [.github/workflows/workday-clock-out-reminder.yml](.github/workflows/workday-clock-out-reminder.yml)：
+周一到周六每天 18:05：
 
-```yaml
-schedule:
-  - cron: "0,5,10,15,20,25 10 * * 1-6"
+```text
+0 5 18 ? * MON-SAT *
 ```
 
-含义：
+函数代码里还有一层北京时间保护：只有周一到周六北京时间 18:00-18:20 之间才会发送，避免误触发。
 
-- `0,5,10,15,20,25`：第 0、5、10、15、20、25 分钟尝试触发
-- `10`：UTC 10 点，也就是北京时间 18 点
-- `* *`：每天、每月
-- `1-6`：周一到周六
+## GitHub Actions
 
-脚本会额外检查当前北京时间：
-
-- 如果不在 18:00-18:30，直接跳过，不发送。
-- 如果当天已经发送过，直接跳过，避免重复提醒。
-- 手动 `workflow_dispatch` 测试不受时间窗口限制。
-
-## 修改提醒时间
-
-修改 `.github/workflows/workday-clock-out-reminder.yml` 里的 cron 表达式即可。
-
-例如要改成周一到周六北京时间 19:30-19:55 多次尝试：
-
-1. 北京时间 19:30-19:55 减去 8 小时，得到 UTC 11:30-11:55。
-2. 修改为：
-
-```yaml
-schedule:
-  - cron: "30,35,40,45,50,55 11 * * 1-6"
-```
-
-同时需要把 `scripts/send-wechat-reminder.js` 里的 `isInReminderWindow` 时间窗口改成 19 点对应的范围。
-
-## 手动测试
-
-这个 workflow 支持 `workflow_dispatch` 手动触发。
-
-1. 打开 GitHub 仓库的 `Actions` 页面。
-2. 选择 `Workday Clock-out Reminder`。
-3. 点击 `Run workflow`。
-
-如果 Secret 配置正确，企业微信群会收到 markdown 消息。
+仓库里的 GitHub Actions 现在只保留手动测试入口，不再自动定时发送，避免出现延迟后乱发。
